@@ -50,7 +50,7 @@
 ### 설치
 1. 이 페이지 위쪽의 **Code → Download ZIP**을 눌러 내려받은 뒤, 원하는 폴더에 압축을 푸세요.
 2. 폴더 안의 **`install.bat`**을 더블클릭하세요.
-3. 바탕화면에 생긴 **"밝기 전환"** 아이콘을 더블클릭하면 창이 열려요.
+3. 바탕화면에 생긴 **"Monitor Brightness"** 아이콘을 더블클릭하면 창이 열려요.
 4. (선택) 아이콘을 우클릭한 뒤 **작업 표시줄에 고정**하고 창을 한 번 열었다 닫으면, 작업표시줄 우클릭 빠른 설정이 생겨요.
 
 > 설치한 뒤에는 폴더를 옮기지 마세요. 옮겼다면 `install.bat`을 다시 실행하세요.
@@ -98,7 +98,7 @@
 ### Install
 1. Click **Code → Download ZIP** at the top of this page and extract it to any folder.
 2. Double-click **`install.bat`** in that folder.
-3. Double-click the new **"밝기 전환"** (Brightness) icon on your desktop.
+3. Double-click the new **"Monitor Brightness"** icon on your desktop.
 4. (Optional) Right-click the icon → **Pin to taskbar**, then open and close the window once to enable the taskbar quick presets.
 
 > Don't move the folder after installing. If you do, run `install.bat` again.

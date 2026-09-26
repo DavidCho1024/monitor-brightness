@@ -17,7 +17,7 @@ public static class AppIdTag {
     Marshal.FreeCoTaskMem(v.p); Marshal.ReleaseComObject(ps); return hr;
   } }
 '@
-if (-not $Paths) { $Paths = @((Join-Path ([Environment]::GetFolderPath('Desktop')) '밝기 전환.lnk'), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\밝기 전환.lnk')) }
+if (-not $Paths) { $Paths = @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Monitor Brightness.lnk'), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Monitor Brightness.lnk')) }
 foreach ($l in $Paths) {
   if (Test-Path $l) { "$l -> hr=$([AppIdTag]::Set($l, $AppId))" }
 }

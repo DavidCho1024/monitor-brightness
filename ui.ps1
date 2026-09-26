@@ -61,16 +61,16 @@ function Update-Icon([int]$pct) {
 
 # ---------- taskbar right-click list (saved settings) ----------
 Add-Type -Path (Join-Path $dir 'jumplist.cs')
-# Desktop icon right-click: same saved settings, shown only on the "밝기 전환" shortcut
+# Desktop icon right-click: same saved settings, shown only on the "Monitor Brightness" shortcut
 function Update-DesktopMenu($p) {
   $base = 'HKCU:\Software\Classes\lnkfile\shell'
   for ($i = 0; $i -lt 3; $i++) {
     $k = "$base\BrightnessPreset$($i+1)"
     if ($p[$i] -eq $null) { Remove-Item $k -Recurse -Force -ErrorAction SilentlyContinue; continue }
     New-Item "$k\command" -Force | Out-Null
-    Set-ItemProperty $k -Name 'MUIVerb' -Value "$($i+1)P  밝기 $($p[$i])%"
+    Set-ItemProperty $k -Name 'MUIVerb' -Value "$($i+1)P  Brightness $($p[$i])%"
     Set-ItemProperty $k -Name 'Icon' -Value (Icon-Path $p[$i])
-    Set-ItemProperty $k -Name 'AppliesTo' -Value 'System.ItemNameDisplay:~~"밝기 전환"'
+    Set-ItemProperty $k -Name 'AppliesTo' -Value 'System.ItemNameDisplay:~~"Monitor Brightness"'
     Set-ItemProperty $k -Name 'Position' -Value 'Top'
     Set-ItemProperty "$k\command" -Name '(default)' -Value "`"$env:WINDIR\System32\wscript.exe`" `"$(Join-Path $dir 'launch.vbs')`" $($p[$i])"
   }
@@ -80,10 +80,36 @@ function Update-JumpList {
   if (Test-Path $presetFile) { $j = Get-Content $presetFile -Raw | ConvertFrom-Json; for ($i = 0; $i -lt 3; $i++) { if ($j[$i] -ne $null) { $p[$i] = [int]$j[$i] } } }
   $t = @(); $a = @(); $ic = @()
   for ($i = 0; $i -lt 3; $i++) { if ($p[$i] -eq $null) { continue }
-    $t += "$($i+1)P  밝기 $($p[$i])%"; $a += "`"$(Join-Path $dir 'launch.vbs')`" $($p[$i])"; $ic += (Icon-Path $p[$i]) }
+    $t += "$($i+1)P  Brightness $($p[$i])%"; $a += "`"$(Join-Path $dir 'launch.vbs')`" $($p[$i])"; $ic += (Icon-Path $p[$i]) }
   Update-DesktopMenu $p
   [JumpList]::Set($AppId, "$env:WINDIR\System32\wscript.exe", [string[]]$t, [string[]]$a, [string[]]$ic)
 }
+
+# Keeps a single, correctly named shortcut. Windows sometimes leaves the old file behind when you unpin,
+# so the next pin becomes "... (2)". Leftovers the taskbar no longer references are removed here.
+function Repair-Shortcuts {
+  $ws = New-Object -ComObject WScript.Shell
+  $canon = 'Monitor Brightness.lnk'
+  $mine = { param($folder) Get-ChildItem $folder -Filter *.lnk -ErrorAction SilentlyContinue |
+    Where-Object { $ws.CreateShortcut($_.FullName).Arguments -like "*$(Join-Path $dir 'launch.vbs')*" } }
+
+  $desk = [Environment]::GetFolderPath('Desktop')
+  $d = @(& $mine $desk)
+  if ($d.Count -gt 0) {
+    $keep = $d | Where-Object { $_.Name -eq $canon } | Select-Object -First 1
+    if (-not $keep) { $keep = Rename-Item $d[0].FullName $canon -PassThru }
+    $d | Where-Object { $_.FullName -ne $keep.FullName } | Remove-Item -ErrorAction SilentlyContinue
+  }
+
+  $pinDir = Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'
+  $fav = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband' -ErrorAction SilentlyContinue).Favorites
+  if ($fav) {
+    $u = [Text.Encoding]::Unicode
+    $blob = $u.GetString($fav) + $u.GetString($fav, 1, $fav.Length - 1)
+    & $mine $pinDir | Where-Object { -not $blob.Contains($_.Name) } | Remove-Item -ErrorAction SilentlyContinue
+  }
+}
+Repair-Shortcuts
 
 # Quick mode from the right-click list: apply a level and exit without showing the window
 if ($Apply -ge 0) { Set-Bright $Apply; Update-Icon $Apply; return }
@@ -168,7 +194,7 @@ function Render {
   $g.Clear($cBg)
   foreach ($st in $stars) { if ($st[2] -eq 0 -or $script:blink) { Px $g $cStar $st[0] $st[1] 1 1 } }
   Box $g @(4, 4, 232, 168) $cWhite $cBlack
-  Txt $g '★ 밝기 조절 ★' 120 8 $cYellow -Center
+  Txt $g 'MONITOR BRIGHTNESS' 120 8 $cYellow -Center
   Txt $g 'x' 226 7 $(if ($script:hover -eq 'close') { $cRed } else { $cDim })
   $sc = if ($script:hover -eq 'sound') { $cYellow } elseif ($script:sound) { $cWhite } else { $cDim }
   Txt $g $(if ($script:sound) { '♪ON' } else { '♪OFF' }) 12 7 $sc
@@ -214,7 +240,7 @@ function Render {
 
 # ---------- form ----------
 $form = New-Object Windows.Forms.Form
-$form.Text = '밝기 조절'; $form.FormBorderStyle = 'None'; $form.StartPosition = 'CenterScreen'
+$form.Text = 'Monitor Brightness'; $form.FormBorderStyle = 'None'; $form.StartPosition = 'CenterScreen'
 $form.ClientSize = New-Object Drawing.Size ($W * $Scale), ($H * $Scale); $form.TopMost = $true; $form.KeyPreview = $true
 $form.BackColor = $cBg; $form.Icon = New-Object Drawing.Icon (Icon-Path $script:val)
 [Windows.Forms.Control].GetProperty('DoubleBuffered', [Reflection.BindingFlags]'NonPublic,Instance').SetValue($form, $true, $null)

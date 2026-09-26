@@ -1,7 +1,8 @@
-﻿# Restores full brightness and removes the shortcut, pinned icon and right-click menu entries
+﻿# Restores full brightness and removes every shortcut, pinned icon and right-click menu entry of this tool
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 & (Join-Path $dir 'ui.ps1') -Apply 100
-Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) '밝기 전환.lnk') -ErrorAction SilentlyContinue
-Remove-Item (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\밝기 전환.lnk') -ErrorAction SilentlyContinue
+$ws = New-Object -ComObject WScript.Shell
+Get-ChildItem ([Environment]::GetFolderPath('Desktop')), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar') -Filter *.lnk -ErrorAction SilentlyContinue |
+  Where-Object { $ws.CreateShortcut($_.FullName).Arguments -like "*$(Join-Path $dir 'launch.vbs')*" } | Remove-Item -ErrorAction SilentlyContinue
 1..3 | ForEach-Object { Remove-Item "HKCU:\Software\Classes\lnkfile\shell\BrightnessPreset$_" -Recurse -ErrorAction SilentlyContinue }
-Write-Host '제거 완료. 이제 이 폴더를 지워도 됩니다.' -ForegroundColor Green
+Write-Host '제거 완료. 이제 이 폴더를 지워도 됩니다. / Uninstalled. You can delete this folder now.' -ForegroundColor Green
