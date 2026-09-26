@@ -316,6 +316,8 @@ $form.Add_KeyDown({ param($sender, $e)
 $form.Add_FormClosing({ $live.Stop(); $anim.Stop(); if ($script:val -ne $script:applied) { Set-Bright $script:applied } })
 
 Update-JumpList
+# Brightness may have changed outside this tool (keyboard keys, Windows settings); bring every icon in line on open
+if ((Get-Content (Join-Path $dir 'state.txt') -ErrorAction SilentlyContinue) -ne "$script:val") { Update-Icon $script:val }
 Render
 if ($env:BT_SNAPSHOT) { $canvas.Save($env:BT_SNAPSHOT); return }
 [void]$form.ShowDialog()

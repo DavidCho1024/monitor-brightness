@@ -11,7 +11,10 @@ $sc = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
 $sc.TargetPath = "$env:WINDIR\System32\wscript.exe"
 $sc.Arguments = '"' + (Join-Path $dir 'launch.vbs') + '"'
 $sc.WorkingDirectory = $dir
-$sc.IconLocation = (Join-Path $dir 'bulb_100.ico') + ',0'
+# Start with the bulb that matches the current brightness, so a pin made right now looks right too
+$now = (Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightness -ErrorAction SilentlyContinue | Select-Object -First 1).CurrentBrightness
+if ($now -eq $null) { $now = 100 }
+$sc.IconLocation = (Join-Path $dir ('bulb_{0}.ico' -f ([math]::Round($now / 10) * 10))) + ',0'
 $sc.Description = 'Monitor Brightness - laptop + external monitors'
 $sc.Save()
 & (Join-Path $dir 'set_appid.ps1') | Out-Null
