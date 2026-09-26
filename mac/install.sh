@@ -40,4 +40,16 @@ PLIST
 codesign --force --deep -s - "$APP" >/dev/null 2>&1 || true
 
 echo "Installed: $APP"
+
+# Offer to keep it in the Dock (skipped if it's already there)
+if ! defaults read com.apple.dock persistent-apps 2>/dev/null | grep -q "Monitor%20Brightness.app\|Monitor Brightness.app"; then
+  if [[ "$(defaults read -g AppleLanguages 2>/dev/null | sed -n 2p)" == *ko* ]]; then Q="Dock에 고정할까요? [Y/n] "; else Q="Keep Monitor Brightness in the Dock? [Y/n] "; fi
+  read -r -p "$Q" ans
+  if [[ -z "$ans" || "$ans" =~ ^[Yy] ]]; then
+    defaults write com.apple.dock persistent-apps -array-add \
+      "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$APP</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"
+    killall Dock
+  fi
+fi
+
 open "$APP"

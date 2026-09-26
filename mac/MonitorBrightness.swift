@@ -52,6 +52,10 @@ struct Settings: Codable {
     var presets: [Int?] = [nil, nil, nil]
     var sound = true
     var applied = 100
+    var lang: String?   // "ko" or "en"; nil = follow macOS language
+
+    var isKorean: Bool { (lang ?? (Locale.preferredLanguages.first ?? "en")).hasPrefix("ko") }
+    func L(_ ko: String, _ en: String) -> String { isKorean ? ko : en }
 
     static var url: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -213,11 +217,11 @@ final class PixelView: NSView {
     let cBg = C(14, 14, 38), cStar = C(90, 90, 150), cWhite = C(248, 248, 248), cBlack = C(0, 0, 0)
     let cDim = C(120, 120, 168), cYellow = C(252, 216, 64), cEmpty = C(44, 44, 70), cRed = C(228, 60, 88), cHot = C(60, 40, 0)
     let rects: [(String, [Int])] = [
-        ("close", [222, 7, 12, 11]), ("sound", [10, 6, 34, 13]), ("bar", [28, 84, 184, 14]),
+        ("close", [222, 7, 12, 11]), ("sound", [10, 6, 34, 13]), ("lang", [198, 6, 22, 13]), ("bar", [28, 84, 184, 14]),
         ("slot0", [20, 108, 60, 16]), ("save0", [20, 127, 60, 13]),
         ("slot1", [90, 108, 60, 16]), ("save1", [90, 127, 60, 13]),
         ("slot2", [160, 108, 60, 16]), ("save2", [160, 127, 60, 13]),
-        ("apply", [62, 150, 52, 15]), ("cancel", [126, 150, 52, 15]),
+        ("apply", [54, 150, 62, 15]), ("cancel", [124, 150, 62, 15]),
     ]
     let stars: [(Int, Int, Bool)] = (0..<28).map { _ in (Int.random(in: 2..<238), Int.random(in: 2..<174), Bool.random()) }
     let digits: [Character: String] = [
@@ -295,6 +299,7 @@ final class PixelView: NSView {
         text(cv, "MONITOR BRIGHTNESS", 120, 8, cYellow, center: true)
         text(cv, "x", 226, 7, hover == "close" ? cRed : cDim)
         text(cv, s.sound ? "♪ON" : "♪OFF", 12, 7, hover == "sound" ? cYellow : (s.sound ? cWhite : cDim))
+        text(cv, s.isKorean ? "한" : "EN", 209, 7, hover == "lang" ? cYellow : cWhite, center: true)
         cv.px(cWhite, 8, 21, 224, 1)
 
         // bulb + big number, centered as one group
@@ -322,17 +327,17 @@ final class PixelView: NSView {
             r = rect("save\(i)")
             let hot = hover == "save\(i)", toast = toastSlot == i && Date() < toastUntil
             box(cv, r, (hot || toast) ? cYellow : cDim, (hot || toast) ? cHot : cBlack)
-            text(cv, toast ? "SAVED!" : "저장", r[0] + 30, r[1] + 1, (hot || toast) ? cYellow : cWhite, center: true)
+            text(cv, toast ? s.L("저장됨!", "SAVED!") : s.L("저장", "SAVE"), r[0] + 30, r[1] + 1, (hot || toast) ? cYellow : cWhite, center: true)
         }
 
         // buttons
-        for (k, label) in [("apply", "적용"), ("cancel", "취소")] {
+        for (k, label) in [("apply", s.L("적용", "APPLY")), ("cancel", s.L("취소", "CANCEL"))] {
             let r = rect(k), hot = hover == k
             box(cv, r, hot ? cYellow : cWhite, cBlack)
-            text(cv, label, r[0] + 29, r[1] + 2, hot ? cYellow : cWhite, center: true)
+            text(cv, label, r[0] + 31, r[1] + 2, hot ? cYellow : cWhite, center: true)
             if hot && blink {
-                cv.px(cYellow, r[0] + 6, r[1] + 4, 1, 7); cv.px(cYellow, r[0] + 7, r[1] + 5, 1, 5)
-                cv.px(cYellow, r[0] + 8, r[1] + 6, 1, 3); cv.px(cYellow, r[0] + 9, r[1] + 7, 1, 1)
+                cv.px(cYellow, r[0] + 5, r[1] + 4, 1, 7); cv.px(cYellow, r[0] + 6, r[1] + 5, 1, 5)
+                cv.px(cYellow, r[0] + 7, r[1] + 6, 1, 3); cv.px(cYellow, r[0] + 8, r[1] + 7, 1, 1)
             }
         }
         frameImage = cv.image()
@@ -370,6 +375,7 @@ final class PixelView: NSView {
         play(app.sounds.save); toastSlot = i; toastUntil = Date().addingTimeInterval(0.9); render()
     }
     func toggleSound() { app.settings.sound.toggle(); app.settings.save(); play(app.sounds.load); render() }
+    func toggleLang() { app.settings.lang = app.settings.isKorean ? "en" : "ko"; app.settings.save(); play(app.sounds.load); render() }
 
     // ---- input ----
     func point(_ e: NSEvent) -> (Int, Int) {
@@ -386,6 +392,7 @@ final class PixelView: NSView {
         case "apply": applyNow()
         case "cancel", "close": cancelNow()
         case "sound": toggleSound()
+        case "lang": toggleLang()
         case let s where s.hasPrefix("slot"): load(Int(String(s.last!))!)
         case let s where s.hasPrefix("save"): save(Int(String(s.last!))!)
         default: if y < 22 { window?.performDrag(with: e) }
@@ -419,6 +426,7 @@ final class PixelView: NSView {
             case "2": load(1)
             case "3": load(2)
             case "m": toggleSound()
+            case "l": toggleLang()
             default: super.keyDown(with: e)
             }
         }
@@ -472,22 +480,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     func buildMenu(_ m: NSMenu, full: Bool) -> NSMenu {
         for (i, p) in settings.presets.enumerated() {
             guard let p = p else { continue }
-            let item = NSMenuItem(title: "\(i + 1)P  Brightness \(p)%", action: #selector(applyPreset(_:)), keyEquivalent: "")
+            let item = NSMenuItem(title: "\(i + 1)P  \(settings.L("밝기", "Brightness")) \(p)%", action: #selector(applyPreset(_:)), keyEquivalent: "")
             item.target = self; item.tag = i
             item.image = pixelImage(sprites[Int((Double(p) / 10).rounded())], size: 18, crop: CGRect(x: 1, y: 0, width: 22, height: 22))
             m.addItem(item)
         }
         if full {
             if m.items.count > 0 { m.addItem(.separator()) }
-            m.addItem(withTitle: "Open Monitor Brightness", action: #selector(openWindow), keyEquivalent: "").target = self
-            let snd = m.addItem(withTitle: "Sound", action: #selector(toggleSound), keyEquivalent: "")
+            m.addItem(withTitle: settings.L("밝기 조절 열기", "Open Monitor Brightness"), action: #selector(openWindow), keyEquivalent: "").target = self
+            let snd = m.addItem(withTitle: settings.L("효과음", "Sound"), action: #selector(toggleSound), keyEquivalent: "")
             snd.target = self; snd.state = settings.sound ? .on : .off
             if #available(macOS 13.0, *) {
-                let login = m.addItem(withTitle: "Launch at Login", action: #selector(toggleLogin), keyEquivalent: "")
+                let login = m.addItem(withTitle: settings.L("로그인 시 자동 실행", "Launch at Login"), action: #selector(toggleLogin), keyEquivalent: "")
                 login.target = self; login.state = SMAppService.mainApp.status == .enabled ? .on : .off
             }
             m.addItem(.separator())
-            m.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            m.addItem(withTitle: settings.L("종료", "Quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         }
         return m
     }

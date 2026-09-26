@@ -5,6 +5,10 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 . (Join-Path $dir 'pixel.ps1')
 $presetFile = Join-Path $dir 'presets.json'
 $AppId = 'PixelBrightness.App'
+# UI language (ko / en): saved choice, otherwise follow Windows
+$langFile = Join-Path $dir 'lang.txt'
+$script:lang = if (Test-Path $langFile) { (Get-Content $langFile -Raw).Trim() } elseif ((Get-Culture).TwoLetterISOLanguageName -eq 'ko') { 'ko' } else { 'en' }
+function L($ko, $en) { if ($script:lang -eq 'ko') { $ko } else { $en } }
 
 Add-Type -TypeDefinition @'
 using System; using System.Runtime.InteropServices;
@@ -68,7 +72,7 @@ function Update-DesktopMenu($p) {
     $k = "$base\BrightnessPreset$($i+1)"
     if ($p[$i] -eq $null) { Remove-Item $k -Recurse -Force -ErrorAction SilentlyContinue; continue }
     New-Item "$k\command" -Force | Out-Null
-    Set-ItemProperty $k -Name 'MUIVerb' -Value "$($i+1)P  Brightness $($p[$i])%"
+    Set-ItemProperty $k -Name 'MUIVerb' -Value "$($i+1)P  $(L '밝기' 'Brightness') $($p[$i])%"
     Set-ItemProperty $k -Name 'Icon' -Value (Icon-Path $p[$i])
     Set-ItemProperty $k -Name 'AppliesTo' -Value 'System.ItemNameDisplay:~~"Monitor Brightness"'
     Set-ItemProperty $k -Name 'Position' -Value 'Top'
@@ -80,7 +84,7 @@ function Update-JumpList {
   if (Test-Path $presetFile) { $j = Get-Content $presetFile -Raw | ConvertFrom-Json; for ($i = 0; $i -lt 3; $i++) { if ($j[$i] -ne $null) { $p[$i] = [int]$j[$i] } } }
   $t = @(); $a = @(); $ic = @()
   for ($i = 0; $i -lt 3; $i++) { if ($p[$i] -eq $null) { continue }
-    $t += "$($i+1)P  Brightness $($p[$i])%"; $a += "`"$(Join-Path $dir 'launch.vbs')`" $($p[$i])"; $ic += (Icon-Path $p[$i]) }
+    $t += "$($i+1)P  $(L '밝기' 'Brightness') $($p[$i])%"; $a += "`"$(Join-Path $dir 'launch.vbs')`" $($p[$i])"; $ic += (Icon-Path $p[$i]) }
   Update-DesktopMenu $p
   [JumpList]::Set($AppId, "$env:WINDIR\System32\wscript.exe", [string[]]$t, [string[]]$a, [string[]]$ic)
 }
@@ -160,11 +164,12 @@ $cDim = C 120 120 168; $cYellow = C 252 216 64; $cEmpty = C 44 44 70; $cRed = C 
 $rects = [ordered]@{
   close  = @(222, 7, 12, 11)
   sound  = @(10, 6, 34, 13)
+  lang   = @(198, 6, 22, 13)
   bar    = @(28, 84, 184, 14)
   slot0  = @(20, 108, 60, 16);  save0 = @(20, 127, 60, 13)
   slot1  = @(90, 108, 60, 16);  save1 = @(90, 127, 60, 13)
   slot2  = @(160, 108, 60, 16); save2 = @(160, 127, 60, 13)
-  apply  = @(62, 150, 52, 15);  cancel = @(126, 150, 52, 15)
+  apply  = @(54, 150, 62, 15);  cancel = @(124, 150, 62, 15)
 }
 $stars = @(1..28 | ForEach-Object { ,@((Get-Random -Min 2 -Max 238), (Get-Random -Min 2 -Max 174), (Get-Random -Min 0 -Max 2)) })
 $digits = @{
@@ -198,6 +203,7 @@ function Render {
   Txt $g 'x' 226 7 $(if ($script:hover -eq 'close') { $cRed } else { $cDim })
   $sc = if ($script:hover -eq 'sound') { $cYellow } elseif ($script:sound) { $cWhite } else { $cDim }
   Txt $g $(if ($script:sound) { '♪ON' } else { '♪OFF' }) 12 7 $sc
+  Txt $g $(if ($script:lang -eq 'ko') { '한' } else { 'EN' }) 209 7 $(if ($script:hover -eq 'lang') { $cYellow } else { $cWhite }) -Center
   Px $g $cWhite 8 21 224 1
 
   # bulb + big number, centered as one group
@@ -224,15 +230,15 @@ function Render {
     $r = $rects["save$i"]; $hot = $script:hover -eq "save$i"
     $toast = $script:toastSlot -eq $i -and [datetime]::Now -lt $script:toastUntil
     Box $g $r $(if ($toast -or $hot) { $cYellow } else { $cDim }) $(if ($toast -or $hot) { $cHot } else { $cBlack })
-    Txt $g $(if ($toast) { 'SAVED!' } else { '저장' }) ($r[0] + 30) ($r[1] + 1) $(if ($toast -or $hot) { $cYellow } else { $cWhite }) -Center
+    Txt $g $(if ($toast) { L '저장됨!' 'SAVED!' } else { L '저장' 'SAVE' }) ($r[0] + 30) ($r[1] + 1) $(if ($toast -or $hot) { $cYellow } else { $cWhite }) -Center
   }
 
   # buttons
   foreach ($k in 'apply', 'cancel') {
     $r = $rects[$k]; $hot = $script:hover -eq $k
     Box $g $r $(if ($hot) { $cYellow } else { $cWhite }) $cBlack
-    Txt $g $(if ($k -eq 'apply') { '적용' } else { '취소' }) ($r[0] + 29) ($r[1] + 2) $(if ($hot) { $cYellow } else { $cWhite }) -Center
-    if ($hot -and $script:blink) { Arrow $g ($r[0] + 6) ($r[1] + 4) $cYellow }
+    Txt $g $(if ($k -eq 'apply') { L '적용' 'APPLY' } else { L '취소' 'CANCEL' }) ($r[0] + 31) ($r[1] + 2) $(if ($hot) { $cYellow } else { $cWhite }) -Center
+    if ($hot -and $script:blink) { Arrow $g ($r[0] + 5) ($r[1] + 4) $cYellow }
   }
   $g.Dispose()
   $form.Invalidate()
@@ -267,6 +273,7 @@ function Set-Val([int]$v, [switch]$Quiet) {
 function Hit($x, $y) { foreach ($k in $rects.Keys) { $r = $rects[$k]; if ($x -ge $r[0] -and $x -lt $r[0] + $r[2] -and $y -ge $r[1] -and $y -lt $r[1] + $r[3]) { return $k } }; '' }
 function Bar-Val($x) { [int][math]::Round(($x - 30) / 1.79) }
 function Do-Sound { $script:sound = -not $script:sound; Set-Content $soundFile $(if ($script:sound) { "on" } else { "off" }); Snd $sndLoad; Render }
+function Do-Lang { $script:lang = L 'en' 'ko'; Set-Content $langFile $script:lang; Update-JumpList; Snd $sndLoad; Render }
 function Do-Apply { $live.Stop(); Set-Bright $script:val; $script:applied = $script:val; Update-Icon $script:val; Snd $sndOk -Sync; $form.Close() }
 function Do-Cancel { Snd $sndCancel -Sync; $form.Close() }
 function Do-Load($i) { if ($presets[$i] -ne $null) { Snd $sndLoad; Set-Val $presets[$i] -Quiet } }
@@ -282,6 +289,7 @@ $form.Add_MouseDown({ param($sender, $e)
     '^cancel$'  { Do-Cancel }
     '^close$'   { Do-Cancel }
     '^sound$'   { Do-Sound }
+    '^lang$'    { Do-Lang }
     '^$'        { if ($y -lt 22) { [G]::ReleaseCapture() | Out-Null; [G]::SendMessage($form.Handle, 0xA1, [IntPtr]2, [IntPtr]::Zero) | Out-Null } }
   } })
 $form.Add_MouseMove({ param($sender, $e)
@@ -302,6 +310,7 @@ $form.Add_KeyDown({ param($sender, $e)
     'D2' { Do-Load 1 }
     'D3' { Do-Load 2 }
     'M'  { Do-Sound }
+    'L'  { Do-Lang }
   } })
 # Closing without 적용 restores the brightness from before the window opened
 $form.Add_FormClosing({ $live.Stop(); $anim.Stop(); if ($script:val -ne $script:applied) { Set-Bright $script:applied } })
