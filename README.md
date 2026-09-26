@@ -1,4 +1,4 @@
-# 💡 Monitor Brightness Controller
+# 💡 Monitor Brightness
 
 **노트북 화면과 외부 모니터 밝기를 한 번에 조절하는 도트(픽셀) 스타일 도구 (Windows · macOS)**
 **A pixel-art tool for Windows and macOS that controls your laptop screen and external monitors at the same time**
@@ -145,7 +145,7 @@ Run **`uninstall.bat`**. It restores 100% brightness and removes the shortcut an
    ```
 2. ZIP을 받아 압축을 푼 뒤, 터미널에서 실행하세요. / Download the ZIP, extract it, then run:
    ```
-   cd ~/Downloads/monitor-brightness-controller-main/mac
+   cd ~/Downloads/monitor-brightness-main/mac
    ./install.sh
    ```
 3. `~/Applications/Monitor Brightness.app`이 만들어지고 바로 실행돼요. / The app is built into `~/Applications` and opens.
