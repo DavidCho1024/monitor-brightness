@@ -47,11 +47,16 @@ function Set-Bright([int]$pct) {
 function Icon-Path([int]$pct) { Join-Path $dir ('bulb_{0}.ico' -f ([math]::Round($pct / 10) * 10)) }
 function Update-Icon([int]$pct) {
   Set-Content (Join-Path $dir 'state.txt') $pct
-  $lnks = @((Join-Path ([Environment]::GetFolderPath('Desktop')) '밝기 전환.lnk'), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\밝기 전환.lnk'))
-  foreach ($l in $lnks) { if (-not (Test-Path $l)) { continue }
-    $sc = (New-Object -ComObject WScript.Shell).CreateShortcut($l); $sc.IconLocation = (Icon-Path $pct) + ',0'; $sc.Save() }
-  & (Join-Path $dir 'set_appid.ps1') -AppId $AppId | Out-Null
+  $ws = New-Object -ComObject WScript.Shell
+  # Any shortcut on the desktop or pinned to the taskbar that launches this tool, whatever it was renamed to
+  $lnks = @(Get-ChildItem ([Environment]::GetFolderPath('Desktop')), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar') -Filter *.lnk -ErrorAction SilentlyContinue |
+    Where-Object { $ws.CreateShortcut($_.FullName).Arguments -like "*$(Join-Path $dir 'launch.vbs')*" } | ForEach-Object { $_.FullName })
+  foreach ($l in $lnks) { $sc = $ws.CreateShortcut($l); $sc.IconLocation = (Icon-Path $pct) + ',0'; $sc.Save() }
+  & (Join-Path $dir 'set_appid.ps1') -AppId $AppId -Paths $lnks | Out-Null
+  # Tell the shell each shortcut changed (SHCNE_UPDATEITEM), then flush the icon cache so the taskbar pin redraws
+  foreach ($l in $lnks) { $p = [Runtime.InteropServices.Marshal]::StringToHGlobalUni($l); [G]::SHChangeNotify(0x2000, 0x5, $p, [IntPtr]::Zero); [Runtime.InteropServices.Marshal]::FreeHGlobal($p) }
   [G]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
+  Start-Process "$env:WINDIR\System32\ie4uinit.exe" -ArgumentList '-show' -WindowStyle Hidden
 }
 
 # ---------- taskbar right-click list (saved settings) ----------

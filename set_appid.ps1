@@ -1,4 +1,4 @@
-﻿param([string]$AppId = 'PixelBrightness.App')
+﻿param([string]$AppId = 'PixelBrightness.App', [string[]]$Paths)
 # Tags the shortcuts with our AppUserModelID so the running window groups with the pinned icon
 Add-Type -TypeDefinition @'
 using System; using System.Runtime.InteropServices;
@@ -17,6 +17,7 @@ public static class AppIdTag {
     Marshal.FreeCoTaskMem(v.p); Marshal.ReleaseComObject(ps); return hr;
   } }
 '@
-foreach ($l in @((Join-Path ([Environment]::GetFolderPath('Desktop')) '밝기 전환.lnk'), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\밝기 전환.lnk'))) {
+if (-not $Paths) { $Paths = @((Join-Path ([Environment]::GetFolderPath('Desktop')) '밝기 전환.lnk'), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\밝기 전환.lnk')) }
+foreach ($l in $Paths) {
   if (Test-Path $l) { "$l -> hr=$([AppIdTag]::Set($l, $AppId))" }
 }
