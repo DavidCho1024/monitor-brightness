@@ -1,7 +1,7 @@
 # 💡 Monitor Brightness Controller
 
-**노트북 화면과 외부 모니터 밝기를 한 번에 조절하는 도트(픽셀) 스타일 Windows 도구**
-**A pixel-art Windows tool that controls your laptop screen and external monitors at the same time**
+**노트북 화면과 외부 모니터 밝기를 한 번에 조절하는 도트(픽셀) 스타일 도구 (Windows · macOS)**
+**A pixel-art tool for Windows and macOS that controls your laptop screen and external monitors at the same time**
 
 ![screenshot](docs/screenshot.png)
 
@@ -128,9 +128,44 @@ Run **`uninstall.bat`**. It restores 100% brightness and removes the shortcut an
 
 ---
 
+## 🍎 macOS (beta)
+
+같은 기능을 Mac 앱으로도 쓸 수 있어요. / The same tool is also available as a native Mac app.
+
+| Windows | macOS |
+|---|---|
+| 바탕화면 아이콘 / Desktop icon | Dock 아이콘 + 메뉴 막대 전구 / Dock icon + menu bar bulb |
+| 작업표시줄·바탕화면 우클릭 빠른 설정 / Right-click quick presets | Dock 우클릭 · 메뉴 막대 클릭 / Dock right-click · menu bar click |
+| 밝기에 따라 바뀌는 아이콘 / Icon follows brightness | Dock · 메뉴 막대 · Finder 아이콘 모두 / Dock, menu bar and Finder icon |
+
+**설치 / Install**
+1. Xcode Command Line Tools가 없다면 먼저 설치하세요. / Install Xcode Command Line Tools if you don't have them.
+   ```
+   xcode-select --install
+   ```
+2. ZIP을 받아 압축을 푼 뒤, 터미널에서 실행하세요. / Download the ZIP, extract it, then run:
+   ```
+   cd ~/Downloads/monitor-brightness-controller-main/mac
+   ./install.sh
+   ```
+3. `~/Applications/Monitor Brightness.app`이 만들어지고 바로 실행돼요. / The app is built into `~/Applications` and opens.
+
+**Mac에서 다른 점 / Differences on Mac**
+- 외부 모니터 밝기(감마)는 **앱이 켜져 있는 동안만** 유지돼요. 창을 닫아도 앱은 Dock과 메뉴 막대에 남아 있으니 **종료하지 마세요.** 메뉴 막대 전구 → **Launch at Login**을 켜 두면 편해요.
+  External monitor dimming (gamma) only lasts **while the app is running**. Closing the window keeps it in the Dock and menu bar, so **don't quit it**. Turn on **Launch at Login** from the menu bar bulb.
+- Windows와 달리 외부 모니터도 **10%까지** 어두워져요. (별도 설정 필요 없음) / Unlike Windows, external monitors can go down to **10%** with no extra setup.
+- 잠자기에서 깨어나거나 모니터를 연결하면 밝기를 자동으로 다시 적용해요. / Brightness is re-applied automatically after sleep or when a monitor is plugged in.
+- 외부 모니터 화면 모드는 Windows와 똑같이 **사용자 지정(Custom)**으로 바꿔 주세요. / As on Windows, set the monitor's picture mode to **Custom**.
+- 제거 / Uninstall: `./uninstall.sh`
+
+> Mac 버전은 아직 실제 Mac에서 충분히 테스트되지 않은 베타예요. 문제가 있으면 Issue로 알려주세요.
+> The Mac version is a beta that hasn't been widely tested on real Macs yet. Please report problems as an Issue.
+
+---
+
 ### Requirements / 요구 사항
-- Windows 10 / 11
-- No extra software needed. It uses the built-in Windows PowerShell 5.1. / 별도 설치 없이 Windows 기본 PowerShell 5.1로 작동해요.
+- **Windows 10 / 11**: 별도 설치 없이 Windows 기본 PowerShell 5.1로 작동해요. / No extra software needed; uses the built-in PowerShell 5.1.
+- **macOS 11+**: Xcode Command Line Tools로 직접 빌드해요. / Built locally with Xcode Command Line Tools.
 
 ### License
 MIT
